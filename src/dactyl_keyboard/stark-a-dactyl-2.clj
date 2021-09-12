@@ -8,7 +8,6 @@
 (defn deg2rad [degrees]
   (* (/ degrees 180) pi))
 
-
 (def keyswitch-width 13.8) ;;keyswithc width left to right measured on kailh box jades
 (def total-keyswitch-depth 15.55) ;;keyswitch depth front to back
 (def keyswitch-depth 13.9) ;;keyswitch depth where it slots into a plate.
@@ -34,33 +33,35 @@
 (def clip-depth 0.8)
 
 (def plate-thickness 4.5)
+(def web-thickness 3.5)
 (def mount-thickness 2)
 (def switch-clip-thickness 1.5)
+(def switch-alignment-offset 0)
+(def post-size 0.1)
 (def columns (range 0 5))
-(def rows (range 0 9))
-(def row-number-offset 4)
+(def rows (range 0 6))
+(def row-number-offset 2)
 (def left-to-right-curve (deg2rad 5))
 (def front-to-back-curve (deg2rad 15))
 
+(def mount-width (+ keyswitch-width (* mount-thickness 2)))
+(def mount-depth (+ keyswitch-depth (* mount-thickness 2)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  SINGLE SWITCH MOUNT   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def switch-mount
-  (let [front-wall (->> (cube (+ keyswitch-depth (* mount-thickness 2)) mount-thickness plate-thickness)
-        (translate [0
-                    (/ (+ keyswitch-depth mount-thickness) 2)
-                    ;(/ plate-thickness 2)]))
-                    0]))
-        side-wall (->> (cube mount-thickness (+ keyswitch-width (* mount-thickness 2)) plate-thickness)
+  (let [front-wall (->> (cube mount-depth mount-thickness plate-thickness)
+                        (translate [0
+                                    (/ (+ keyswitch-depth mount-thickness) 2)
+                                    0]))
+        side-wall (->> (cube mount-thickness mount-width plate-thickness)
                        (translate [(/ (+ keyswitch-width mount-thickness) 2)
                                    0
-                                   ;(/ plate-thickness 2)]))
                                    0]))
         clip-hole (->> (cube clip-width clip-depth clip-height)
                        (translate [0
                                    (- (+ keyswitch-depth clip-depth) (/ (+ keyswitch-depth clip-depth) 2))
-                                   ;(- (- plate-thickness switch-clip-thickness) (/ clip-height 2))]))
                                    (- (- (/ plate-thickness 2) switch-clip-thickness) (/ clip-height 2))]))
         half-mount (difference (union front-wall side-wall)
                                clip-hole)]
@@ -69,32 +70,42 @@
            (mirror [1 0 0])
            (mirror [0 1 0])))))
 
+;;;;;;;;;;;;;;;;
+;;   KEYCAP   ;;
+;;;;;;;;;;;;;;;;
+
+(def cap-to-mount 5.4)
+(def keycap-thickness 1.6)
+
+(def keycap
+  (let [front-wall (->> (cube mount-depth keycap-thickness keycap-height)
+                        (translate [0
+                                    (/ (+ keyswitch-depth mount-thickness) 2)
+                                    (+ (+ cap-to-mount (/ plate-thickness 2)) (/ keycap-height 2))]))
+        side-wall (->> (cube keycap-thickness mount-width keycap-height)
+                       (translate [(/ (+ keyswitch-depth mount-thickness) 2)
+                                   0
+                                   (+ (+ cap-to-mount (/ plate-thickness 2)) (/ keycap-height 2))]))
+        half-cap (union front-wall side-wall)]
+    (union half-cap
+           (->> half-cap
+                (mirror [1 0 0])
+                (mirror [0 1 0])))))
 ;;;;;;;;;;;;;;;;;;;;
 ;;   SINGLE ROW   ;;
 ;;;;;;;;;;;;;;;;;;;;
 
-;(def front-to-back-radius (Math/sin
-
-(defn row-y-offset [row]
-  (reduce + (for [x (range row)]
-              (* (Math/cos (* front-to-back-curve x)) (+ keycap-depth (* mount-thickness 2)))
-              )))
-
-(defn row-z-offset [row]
-  (- (reduce + (for [x (range row)]
-              (* (Math/sin (* front-to-back-curve x)) (+ keycap-depth (* mount-thickness 2))))
-              ) (/ (+ keycap-depth (* mount-thickness 2)) 2)))
+;comment this function calculates the radius of a circle based on size of sin(angle)/mount-size. Then places objects on the outside of the curve
+(def row-radius (+ (/ (/ (+ mount-depth switch-alignment-offset) 2)
+                      (Math/sin (/ front-to-back-curve 2)))
+                   (+ plate-thickness (+ cap-to-mount keycap-height))))
 
 (defn row-placement [row shape]
-  (let [angle (* front-to-back-curve (- row row-number-offset))
-        offset [0
-                (* (row-y-offset (Math/abs (- row row-number-offset))) (cond (< (- row row-number-offset) 0) -1 :else 1))
-                ;(* (* (Math/cos angle) (+ keycap-depth (* mount-thickness 2))) (- row row-number-offset))
-                ;(Math/abs (* (* (Math/sin angle) (* (+ keycap-depth (* mount-thickness 2)) 0.5)) (- row row-number-offset)))]]
-                (row-z-offset (Math/abs (- row row-number-offset)))]]
-    (->> shape
-         (rotate angle [1 0 0])
-         (translate offset))))
+  (let [radius-offset-shape (->> shape
+                                 (translate [0 0 (- row-radius)])
+                                 (rotate (* front-to-back-curve (- row row-number-offset)) [1 0 0])
+                                 (translate [0 0 row-radius]))]
+      radius-offset-shape))
 
 (def key-holes
   (apply union
@@ -102,9 +113,40 @@
            (->> switch-mount
                 (row-placement row)))))
 
+(def keycaps
+  (apply union
+         (for [row rows]
+           (->> keycap
+                (row-placement row)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;   WEB CONNECTORS   ;;
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+(def web-post (->> (cube post-size post-size web-thickness)
+                   (translate [0
+                               0
+                               (- (/ plate-thickness 2) (/ web-thickness 2))])))
+
+(def web-post-fl (color [240/255 0 0 1] (translate[(- (- (/ mount-width 2) (/ post-size 2))) (- (- (/ mount-depth 2) (/ post-size 2))) 0] web-post)))
+(def web-post-fr (color [240/255 0 0 1] (translate[(+ (/ mount-width 2) (/ post-size 2)) (- (- (/ mount-depth 2) (/ post-size 2))) 0] web-post)))
+(def web-post-bl (color [240/255 0 0 1] (translate[(- (- (/ mount-width 2) (/ post-size 2))) (+ (/ mount-depth 2) (/ post-size 2)) 0] web-post)))
+(def web-post-br (color [240/255 0 0 1] (translate[(+ (/ mount-width 2) (/ post-size 2)) (+ (/ mount-depth 2) (/ post-size 2)) 0] web-post)))
+
+(def connectors
+  (apply union
+         (concat
+           (for [row (drop-last rows)]
+             (triangle-hulls
+               (row-placement (inc row) web-post-fl)
+               (row-placement (inc row) web-post-fr)
+               (row-placement row web-post-bl)
+               (row-placement row web-post-br))
+             )
+           )))
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   SPIT or output   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spit "things/start-a-dactyl-2.scad"
-      (write-scad key-holes))
+      (write-scad (union key-holes connectors)))
