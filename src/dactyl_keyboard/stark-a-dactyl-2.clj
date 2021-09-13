@@ -30,18 +30,18 @@
 
 (def clip-width 4.75)
 (def clip-height 1.5)
-(def clip-depth 0.8)
+(def clip-depth 1.0)
 
-(def plate-thickness 8.5)
-(def web-thickness 8.5)
+(def plate-thickness 4.5)
+(def web-thickness 3.5)
 (def mount-thickness 2)
 (def switch-clip-thickness 1.5)
-(def switch-alignment-row-offset -1)
+(def switch-alignment-row-offset -2)
 (def switch-alignment-column-offset 0)
 (def post-size 0.1)
 (def columns (range 0 6))
-(def rows (range 0 5))
-(def row-number-offset 2)
+(def rows (range 0 4))
+(def row-number-offset 1)
 (def column-number-offset 1)
 (def left-to-right-curve (deg2rad 10))
 (def front-to-back-curve (deg2rad 15))
@@ -142,6 +142,12 @@
            (->> key-holes
                 (column-placement column)))))
 
+(def keycaps-columns
+  (apply union
+         (for [column columns]
+           (->> keycaps
+                (column-placement column)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   WEB CONNECTORS   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -172,13 +178,23 @@
   (apply union
          (concat
            (for [column (drop-last columns)]
+             (for [row rows]
                  (triangle-hulls
-                   (column-placement (inc column) web-post-fl)
-                   (column-placement (inc column) web-post-bl)
-                   (column-placement column web-post-fr)
-                   (column-placement column web-post-br))
-              )
-            )))
+                   (column-placement (inc column) (row-placement row web-post-fl))
+                   (column-placement column (row-placement row web-post-fr))
+                   (column-placement (inc column) (row-placement row web-post-bl))
+                   (column-placement column (row-placement row web-post-br))))))))
+
+(def diagonal-hulls
+  (apply union
+         (concat
+           (for [column (drop-last columns)]
+            (for [row (drop-last rows)]
+             (triangle-hulls
+              (column-placement (inc column) (row-placement (inc row) web-post-fl))
+              (column-placement column (row-placement (inc row) web-post-fr))
+              (column-placement (inc column) (row-placement row web-post-bl))
+              (column-placement column (row-placement row web-post-br))))))))
 
 (def column-connectors
   (apply union
@@ -186,11 +202,11 @@
            (->> row-hulls
                 (column-placement column)))))
 
-(def colum-row-connectors
+(def column-row-connectors
   (apply union
-         (for [row rows]
+         (for [column columns]
            (->> column-hulls
-                (row-placement row)))))
+                (column-placement column)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;   WALLS/BOTTOM   ;;
@@ -216,4 +232,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spit "things/start-a-dactyl-2.scad"
-      (write-scad (union column-shapes column-connectors butt-column)))
+      (write-scad (union column-shapes column-connectors column-hulls diagonal-hulls)))
