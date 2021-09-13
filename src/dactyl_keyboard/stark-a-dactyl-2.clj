@@ -36,12 +36,14 @@
 (def web-thickness 8.5)
 (def mount-thickness 2)
 (def switch-clip-thickness 1.5)
-(def switch-alignment-offset 0)
+(def switch-alignment-row-offset -1)
+(def switch-alignment-column-offset 0)
 (def post-size 0.1)
-(def columns (range 0 5))
-(def rows (range 0 6))
+(def columns (range 0 6))
+(def rows (range 0 5))
 (def row-number-offset 2)
-(def left-to-right-curve (deg2rad 5))
+(def column-number-offset 1)
+(def left-to-right-curve (deg2rad 10))
 (def front-to-back-curve (deg2rad 15))
 
 (def mount-width (+ keyswitch-width (* mount-thickness 2)))
@@ -96,7 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 ;comment this function calculates the radius of a circle based on size of sin(angle)/mount-size. Then places objects on the outside of the curve
-(def row-radius (+ (/ (/ (+ mount-depth switch-alignment-offset) 2)
+(def row-radius (+ (/ (/ (+ mount-depth switch-alignment-row-offset) 2)
                       (Math/sin (/ front-to-back-curve 2)))
                    (+ plate-thickness (+ cap-to-mount keycap-height))))
 
@@ -119,6 +121,33 @@
            (->> keycap
                 (row-placement row)))))
 
+;;;;;;;;;;;;;;;;;
+;;   COLUMNS   ;;
+;;;;;;;;;;;;;;;;;
+
+(def column-radius (+ (/ (/ (+ mount-width switch-alignment-column-offset) 2)
+                         (Math/sin (/ left-to-right-curve 2)))
+                      (+ plate-thickness (+ cap-to-mount keycap-height))))
+
+(defn column-placement [column shape]
+  (let [radius-offset-shape (->> shape
+                                 (translate [0 0 (- column-radius)])
+                                 (rotate (* left-to-right-curve (- column column-number-offset)) [0 -1 0])
+                                 (translate [0 0 column-radius]))]
+  radius-offset-shape))
+
+(def column-shapes
+  (apply union
+         (for [column columns]
+           (->> key-holes
+                (column-placement column)))))
+
+(def column-connectors
+  (apply union
+         (for [column columns]
+           (->> row-hulls
+                (column-placement column)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   WEB CONNECTORS   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,7 +162,7 @@
 (def web-post-bl (color [240/255 0 0 1] (translate[(- (- (/ mount-width 2) (/ post-size 2))) (+ (/ mount-depth 2) (/ post-size 2)) 0] web-post)))
 (def web-post-br (color [240/255 0 0 1] (translate[(+ (/ mount-width 2) (/ post-size 2)) (+ (/ mount-depth 2) (/ post-size 2)) 0] web-post)))
 
-(def connectors
+(def row-hulls
   (apply union
          (concat
            (for [row (drop-last rows)]
@@ -145,12 +174,24 @@
              )
            )))
 
+(def column-hulls
+  (apply union
+         (concat
+           (for [column (drop-last columns)]
+                 (triangle-hulls
+                   (column-placement (inc column) web-post-fl)
+                   (column-placement (inc column) web-post-bl)
+                   (column-placement column web-post-fr)
+                   (column-placement column web-post-br))
+              )
+            )))
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;   WALLS/BOTTOM   ;;
 ;;;;;;;;;;;;;;;;;;;;;;
 
 (def curved-bottom
-  (let [block (->> (cube mount-width (* mount-depth 7) 50)
+  (let [block (->> (cube mount-width (* (+ mount-depth switch-alignment-row-offset) 7) 50)
                    (translate [0
                                (* mount-depth (- row-number-offset 1.5))
                                (- 25 (/ plate-thickness 2))]))
@@ -169,4 +210,4 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spit "things/start-a-dactyl-2.scad"
-      (write-scad (union key-holes connectors curved-bottom)))
+      (write-scad (union column-shapes column-connectors butt-column)))
