@@ -32,8 +32,8 @@
 (def clip-height 1.5)
 (def clip-depth 0.8)
 
-(def plate-thickness 4.5)
-(def web-thickness 3.5)
+(def plate-thickness 8.5)
+(def web-thickness 8.5)
 (def mount-thickness 2)
 (def switch-clip-thickness 1.5)
 (def switch-alignment-offset 0)
@@ -144,9 +144,29 @@
                (row-placement row web-post-br))
              )
            )))
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;   WALLS/BOTTOM   ;;
+;;;;;;;;;;;;;;;;;;;;;;
+
+(def curved-bottom
+  (let [block (->> (cube mount-width (* mount-depth 7) 50)
+                   (translate [0
+                               (* mount-depth (- row-number-offset 1.5))
+                               (- 25 (/ plate-thickness 2))]))
+        c-curve (->> (cylinder row-radius (+ mount-width 2))
+                     (rotate (deg2rad 90) [0 1 0])
+                     (translate[0
+                                0
+                                (- row-radius (/ plate-thickness 2))]))
+        slice (->> (cube (- mount-width (* 2 mount-thickness)) (* mount-depth 8) 50)
+                   (translate [0
+                               (* mount-depth (- row-number-offset 1.5))
+                                24]))]
+ (difference block c-curve slice)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   SPIT or output   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spit "things/start-a-dactyl-2.scad"
-      (write-scad (union key-holes connectors)))
+      (write-scad (union key-holes connectors curved-bottom)))
