@@ -32,8 +32,8 @@
 (def clip-height 1.5)
 (def clip-depth 1.0)
 
-(def plate-thickness 4.5)
-(def web-thickness 3.5)
+(def plate-thickness 8.5)
+(def web-thickness 8.5)
 (def mount-thickness 2)
 (def switch-clip-thickness 1.5)
 (def switch-alignment-row-offset -2)
@@ -213,10 +213,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;
 
 (def curved-bottom
-  (let [block (->> (cube mount-width (* (+ mount-depth switch-alignment-row-offset) 7) 50)
-                   (translate [0
+  (let [block (->> (cube (* mount-width 6.6) (* (+ mount-depth switch-alignment-row-offset) 5) 50)
+                   (translate [(* mount-width 1.6)
+                               (* mount-depth (- row-number-offset 0.5))
+                               (- 20 (/ plate-thickness 2))]))
+        c-curve (->> (cylinder row-radius (+ mount-width 15))
+                     (rotate (deg2rad 90) [0 1 0])
+                     (translate[0
+                                0
+                                (- row-radius (/ plate-thickness 2))]))
+        slice (->> (cube (- (* mount-width 5.6) (* 2 mount-thickness)) (* mount-depth 8) 59)
+                   (translate [(* mount-width 1.1)
                                (* mount-depth (- row-number-offset 1.5))
-                               (- 25 (/ plate-thickness 2))]))
+                                20]))
+        slice-2 (->> (cube (- mount-width mount-thickness) (* mount-depth 8) 50)
+                     (translate [(/ mount-thickness 2)
+                                 (* mount-depth (- row-number-offset 1.5))
+                                 15]))]
+ (difference block (column-placement 0 c-curve) (column-placement 5 c-curve) slice)))
+
+(def curved-bottom-right
+  (let [block (->> (cube mount-width (* (+ mount-depth switch-alignment-row-offset) 5) 50)
+                   (translate [0
+                               (* mount-depth (- row-number-offset 0.5))
+                               (- 20 (/ plate-thickness 2))]))
         c-curve (->> (cylinder row-radius (+ mount-width 2))
                      (rotate (deg2rad 90) [0 1 0])
                      (translate[0
@@ -225,11 +245,16 @@
         slice (->> (cube (- mount-width (* 2 mount-thickness)) (* mount-depth 8) 50)
                    (translate [0
                                (* mount-depth (- row-number-offset 1.5))
-                                24]))]
- (difference block c-curve slice)))
+                                23]))
+        slice-2 (->> (cube (- mount-width mount-thickness) (* mount-depth 8) 50)
+                     (translate [(- (/ mount-thickness 2))
+                                 (* mount-depth (- row-number-offset 1.5))
+                                 15]))]
+ (difference block c-curve slice-2)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   SPIT or output   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spit "things/start-a-dactyl-2.scad"
-      (write-scad (union column-shapes column-connectors column-hulls diagonal-hulls)))
+      (write-scad (union column-shapes column-connectors column-hulls diagonal-hulls curved-bottom)))
