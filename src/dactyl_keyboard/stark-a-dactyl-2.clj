@@ -142,12 +142,6 @@
            (->> key-holes
                 (column-placement column)))))
 
-(def column-connectors
-  (apply union
-         (for [column columns]
-           (->> row-hulls
-                (column-placement column)))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   WEB CONNECTORS   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,6 +179,18 @@
                    (column-placement column web-post-br))
               )
             )))
+
+(def column-connectors
+  (apply union
+         (for [column columns]
+           (->> row-hulls
+                (column-placement column)))))
+
+(def colum-row-connectors
+  (apply union
+         (for [row rows]
+           (->> column-hulls
+                (row-placement row)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;   WALLS/BOTTOM   ;;
