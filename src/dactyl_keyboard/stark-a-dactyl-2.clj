@@ -39,12 +39,14 @@
 (def switch-alignment-row-offset -2)
 (def switch-alignment-column-offset 1)
 (def post-size 0.1)
-(def columns (range 2 4))
-(def rows (range 2 4))
+(def columns (range 1 2))
+(def rows (range 0 4))
 (def row-number-offset 1)
 (def column-number-offset 1)
 (def left-to-right-curve (deg2rad 10))
 (def front-to-back-curve (deg2rad 15))
+
+(def additional-outer-column-curve (deg2rad 45))
 ;(def column-offsets [
 
 (def mount-width (+ keyswitch-width (* mount-thickness 2)))
@@ -149,6 +151,64 @@
            (->> keycaps
                 (column-placement column)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;
+;;   OUTER-COLUMNS   ;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn row-radius-no-offset [n] (+ (/ (/ (- mount-depth (* 4 n)) 2)
+                      (Math/sin (/ front-to-back-curve 2)))
+                   (+ plate-thickness (+ cap-to-mount keycap-height))))
+
+
+(defn row-offset-no-angle [row shape n]
+  (let [radius-offset-shape (->> shape
+                                 (rotate (* front-to-back-curve (- row row-number-offset)) [-1 0 0])
+                                 (translate [0 0 (- (row-radius-no-offset n))])
+                                 (rotate (* front-to-back-curve (- row row-number-offset)) [1 0 0])
+                                 (translate [0 0 (row-radius-no-offset n)]))]
+      radius-offset-shape))
+
+(defn rotate-shape-to-column [row shape]
+  (let [rotated-shape (->> shape
+                           (translate [(+ (* (inc row) (* (Math/sin front-to-back-curve) plate-thickness)))
+                                       0
+                                       15])
+                           (rotate additional-outer-column-curve [0 1 0]))]
+  rotated-shape
+                   ))
+
+
+(defn left-outer-column-rotation [shape]
+;  (let [rotated-shape (->> shape
+ ;                          (rotate additional-outer-column-curve [0 1 0]))]
+    (->> (column-placement 1 shape)
+    ;(->> (column-placement 1 (union (row-offset-no-angle 0 rotated-shape 1.2) (row-offset-no-angle 1 rotated-shape 1.3) (row-offset-no-angle 2 rotated-shape 1.3) (row-offset-no-angle 3 rotated-shape 1.2)))
+         (translate[(- (- (+ mount-width (* (Math/cos additional-outer-column-curve) total-switch-height-with-keycap)) 5))
+                    0
+                   15])))
+
+(def offset-row
+  (union (row-offset-no-angle 0 (rotate-shape-to-column 0 switch-mount) 1.2) (row-offset-no-angle 1 switch-mount 1.3) (row-offset-no-angle 2 switch-mount 1.3) (row-offset-no-angle 3 switch-mount 1.2)))
+
+(def left-outer-column
+  (left-outer-column-rotation offset-row))
+
+(def outer-row-hulls
+  (->> (left-outer-column-rotation (apply union
+         (concat
+           (for [row (drop-last rows)]
+             (triangle-hulls
+               (row-offset-no-angle (inc row) web-post-fl (cond (= row 0) 1.3 (= row 1) 1.3 (= row 2) 1.2 (= row 3) 1.2))
+               (row-offset-no-angle (inc row) web-post-fr (cond (= row 0) 1.3 (= row 1) 1.3 (= row 2) 1.2 (= row 3) 1.2))
+               (row-offset-no-angle row web-post-bl (cond (= row 0) 1.2 (= row 1) 1.3 (= row 2) 1.3 (= row 3) 1.2 ))
+               (row-offset-no-angle row web-post-br (cond (= row 0) 1.2 (= row 1) 1.3 (= row 2) 1.3 (= row 3) 1.2 )))
+             )
+           )))))
+       ;(translate [(- (- (+ mount-width (* (Math/cos additional-outer-column-curve) total-switch-height-with-keycap)) 5)) 0 15])))
+
+
+(def outer-hulls
+  (union outer-row-hulls))
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   WEB CONNECTORS   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -258,7 +318,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spit "things/start-a-dactyl-2.scad"
-      (write-scad (union column-shapes column-connectors column-hulls diagonal-hulls)));(union column-shapes column-connectors column-hulls diagonal-hulls curved-bottom)))
+      (write-scad (union column-shapes column-connectors column-hulls diagonal-hulls left-outer-column outer-hulls )));(union column-shapes column-connectors column-hulls diagonal-hulls curved-bottom)))
 
 (spit "things/single-mount.scad"
       (write-scad switch-mount))
