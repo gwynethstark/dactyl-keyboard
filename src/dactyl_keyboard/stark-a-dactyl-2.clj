@@ -37,14 +37,15 @@
 (def mount-thickness 2)
 (def switch-clip-thickness 1.5)
 (def switch-alignment-row-offset -2)
-(def switch-alignment-column-offset 0)
+(def switch-alignment-column-offset 1)
 (def post-size 0.1)
-(def columns (range 0 6))
-(def rows (range 0 4))
+(def columns (range 2 4))
+(def rows (range 2 4))
 (def row-number-offset 1)
 (def column-number-offset 1)
 (def left-to-right-curve (deg2rad 10))
 (def front-to-back-curve (deg2rad 15))
+;(def column-offsets [
 
 (def mount-width (+ keyswitch-width (* mount-thickness 2)))
 (def mount-depth (+ keyswitch-depth (* mount-thickness 2)))
@@ -257,4 +258,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (spit "things/start-a-dactyl-2.scad"
-      (write-scad (union column-shapes column-connectors column-hulls diagonal-hulls curved-bottom)))
+      (write-scad (union column-shapes column-connectors column-hulls diagonal-hulls)));(union column-shapes column-connectors column-hulls diagonal-hulls curved-bottom)))
+
+(spit "things/single-mount.scad"
+      (write-scad switch-mount))
