@@ -214,8 +214,8 @@
 
 (def web-post-fl (color [240/255 0 0 1] (translate[(- (- (/ mount-width 2) (/ post-size 2))) (- (- (/ mount-depth 2) (/ post-size 2))) 0] web-post)))
 (def web-post-fr (color [240/255 0 0 1] (translate[(+ (/ mount-width 2) (/ post-size 2)) (- (- (/ mount-depth 2) (/ post-size 2))) 0] web-post)))
-(def web-post-bl (color [240/255 0 0 1] (translate[(- (- (/ mount-width 2) (/ post-size 2))) (+ (/ mount-depth 2) (/ post-size 2)) 0] web-post)))
-(def web-post-br (color [240/255 0 0 1] (translate[(+ (/ mount-width 2) (/ post-size 2)) (+ (/ mount-depth 2) (/ post-size 2)) 0] web-post)))
+(def web-post-bl (color [240/255 0 0 1] (translate[(- (- (/ mount-depth 2) (/ post-size 2))) (+ (/ mount-width 2) (/ post-size 2)) 0] web-post)))
+(def web-post-br (color [240/255 0 0 1] (translate[(+ (/ mount-depth 2) (/ post-size 2)) (+ (/ mount-width 2) (/ post-size 2)) 0] web-post)))
 
 (def row-hulls
   (apply union
