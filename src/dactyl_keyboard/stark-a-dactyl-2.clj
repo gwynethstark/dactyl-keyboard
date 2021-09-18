@@ -38,7 +38,7 @@
 (def mount-thickness 2)
 (def switch-clip-thickness 1.5)
 (def switch-alignment-row-offset -2)
-(def switch-alignment-column-offset 1)
+(def switch-alignment-column-offset 1.2)
 (def post-size 0.1)
 (def columns (range 0 6))
 (def rows (range 0 4))
@@ -50,7 +50,7 @@
                            :ringfinger 1.7
                            :middlefinger -0.5
                            :indexfinger 1.7})
-(def finger-depth-offset {:pinky -5.8
+(def finger-depth-offset {:pinky -10.8
                           :ringfinger 0
                           :middlefinger 2.4
                           :indexfinger 0})
@@ -399,7 +399,7 @@
 (def left-wall
   (let [block (->> (cube wall-width (* (+ mount-depth switch-alignment-row-offset) 4.8) 50)
                    (translate[(* mount-width (- row-number-offset 1.55))
-                              (* mount-depth (- row-number-offset 0.8))
+                              (* mount-depth (- row-number-offset 1.1))
                               20]))
         c-curve (->> (cylinder (- row-radius 8) (+ mount-width 15))
                      (rotate (deg2rad 90) [0 1 0])
